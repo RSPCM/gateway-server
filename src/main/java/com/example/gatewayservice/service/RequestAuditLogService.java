@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class RequestAuditLogService {
-    private static final String EXECUTOR_BEAN_NAME = "NotificationTaskExecutor";
+    private static final String EXECUTOR_BEAN_NAME = "AuditLogTaskExecutor";
     private static final int REQUEST_ID_MAX_LENGTH = 100;
     private static final int METHOD_MAX_LENGTH = 16;
     private static final int URI_MAX_LENGTH = 512;
@@ -30,12 +30,15 @@ public class RequestAuditLogService {
                     int responseStatus,
                     long durationMs) {
 
-        log.info("requestId={} method={} uri={} status={} duration={}ms",
+        log.info("requestId={} method={} uri={} query={} status={} duration={}ms remoteAddress={} userAgent={}",
                 requestId,
                 method,
+                requestUri,
                 queryString,
                 responseStatus,
-                durationMs
+                durationMs,
+                remoteAddress,
+                userAgent
         );
 
         AuditLogEvent auditLog = AuditLogEvent.builder()

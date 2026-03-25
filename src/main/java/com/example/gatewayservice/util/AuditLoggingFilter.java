@@ -19,40 +19,6 @@ import java.util.UUID;
 public class AuditLoggingFilter implements GlobalFilter, Ordered {
     private final RequestAuditLogService auditLogService;
 
-    @Override
-    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-        long startTime = System.currentTimeMillis();
-
-        String requestId = UUID.randomUUID().toString();
-
-        // mutatedExchange used everywhere
-        ServerWebExchange mutatedExchange = exchange.mutate()
-                .request(r -> r.header("X-Request-ID", requestId))
-                .build();
-
-        ServerHttpRequest request = mutatedExchange.getRequest();
-
-        return chain.filter(mutatedExchange).then(
-                Mono.fromRunnable(() -> {
-                    long duration = System.currentTimeMillis() - startTime;
-                    int status = mutatedExchange.getResponse().getStatusCode() != null
-                            ? mutatedExchange.getResponse().getStatusCode().value()
-                            : 0;
-
-                    auditLogService.log(
-                            requestId,
-                            request.getMethod().name(),
-                            request.getURI().getPath(),           // requestUri
-                            request.getURI().getQuery(),          // queryString — was missing
-                            resolveClientIp(request),             // remoteAddress
-                            request.getHeaders().getFirst("User-Agent"), // userAgent
-                            status,                               // responseStatus
-                            duration                              // durationMs
-                    );
-                })
-        );
-    }
-
     private String resolveClientIp(ServerHttpRequest request) {
         String xff = request.getHeaders().getFirst("X-Forwarded-For");
         if (xff != null && !xff.isBlank()) return xff.split(",")[0].trim();
@@ -62,7 +28,43 @@ public class AuditLoggingFilter implements GlobalFilter, Ordered {
     }
 
     @Override
+    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+        long startTime = System.currentTimeMillis();
+
+        String requestId = UUID.randomUUID().toString();
+
+        ServerWebExchange mutatedExchange = exchange.mutate()
+                .request(r -> r.header("X-Request-ID", requestId))
+                .build();
+
+        ServerHttpRequest request = mutatedExchange.getRequest();
+
+        return chain.filter(mutatedExchange)
+                .doFinally(signalType -> {
+                    try {
+                        long duration = System.currentTimeMillis() - startTime;
+                        int status = mutatedExchange.getResponse().getStatusCode() != null
+                                ? mutatedExchange.getResponse().getStatusCode().value()
+                                : 0;
+
+                        auditLogService.log(
+                                requestId,
+                                request.getMethod().name(),
+                                request.getURI().getPath(),
+                                request.getURI().getQuery(),
+                                resolveClientIp(request),
+                                request.getHeaders().getFirst("User-Agent"),
+                                status,
+                                duration
+                        );
+                    } catch (Exception e) {
+                        log.error("Failed to log audit event: {}", e.getMessage());
+                    }
+                });
+    }
+
+    @Override
     public int getOrder() {
-        return Ordered.LOWEST_PRECEDENCE;
+        return -1;
     }
 }
