@@ -4,7 +4,6 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.security.SecurityProperties;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
@@ -16,9 +15,6 @@ public class JwtService {
 
     @Value("${jwt.secret-key}")
     private String secretKey;
-
-    @Value("${jwt.duration}")
-    private String duration;
 
     public SecretKey getSigningKey() {
         return Keys.hmacShaKeyFor(secretKey.getBytes());
