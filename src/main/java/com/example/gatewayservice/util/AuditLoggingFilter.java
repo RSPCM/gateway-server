@@ -19,14 +19,6 @@ import java.util.UUID;
 public class AuditLoggingFilter implements GlobalFilter, Ordered {
     private final RequestAuditLogService auditLogService;
 
-    private String resolveClientIp(ServerHttpRequest request) {
-        String xff = request.getHeaders().getFirst("X-Forwarded-For");
-        if (xff != null && !xff.isBlank()) return xff.split(",")[0].trim();
-        return request.getRemoteAddress() != null
-                ? request.getRemoteAddress().getAddress().getHostAddress()
-                : "unknown";
-    }
-
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         long startTime = System.currentTimeMillis();
@@ -61,6 +53,14 @@ public class AuditLoggingFilter implements GlobalFilter, Ordered {
                         log.error("Failed to log audit event: {}", e.getMessage());
                     }
                 });
+    }
+
+    private String resolveClientIp(ServerHttpRequest request) {
+        String xff = request.getHeaders().getFirst("X-Forwarded-For");
+        if (xff != null && !xff.isBlank()) return xff.split(",")[0].trim();
+        return request.getRemoteAddress() != null
+                ? request.getRemoteAddress().getAddress().getHostAddress()
+                : "unknown";
     }
 
     @Override

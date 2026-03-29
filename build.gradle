@@ -34,6 +34,14 @@ dependencies {
     // Lombok
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
+
+    // For creating and parsing JWTs
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.5'
+
+    //
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.5'
+    // JJWT Jackson or GSON extensions for JSON processing
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.5'
 }
 
 dependencyManagement {
